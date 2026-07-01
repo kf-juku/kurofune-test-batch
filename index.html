@@ -696,13 +696,21 @@ textarea { resize: vertical; min-height: 60px; }
     <div class="sidebar">
       <button class="nav-item active" id="nav-select" onclick="showPage('select')"><span class="nav-icon">📚</span>テスト選択</button>
       <button class="nav-item" id="nav-upload" onclick="showPage('upload')"><span class="nav-icon">📷</span>一括採点</button>
-      <button class="nav-item" id="nav-class" onclick="showPage('class')"><span class="nav-icon">📊</span>クラス結果</button>
+      <button class="nav-item" id="nav-class" onclick="showPage('class')"><span class="nav-icon">📊</span>結果・再印刷</button>
       <button class="nav-item" id="nav-settings" onclick="showPage('settings')"><span class="nav-icon">⚙️</span>設定</button>
     </div>
     <div class="main">
 
       <div id="page-select">
         <div class="page-title">テストを選ぶ</div>
+        <div class="card" style="margin-bottom:12px;border:1px solid var(--crimson);"><div class="card-body">
+          <div style="font-size:12px;font-weight:800;color:var(--crimson);margin-bottom:4px;">📱 スマホ用アップロードページ</div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:8px;">先生がスマホで答案を撮って送るページ。開くとパスワード（GAS保護パスワード）を1回入力します。</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" readonly id="uploadPageUrl" value="https://kf-juku.github.io/kurofune-test-batch/upload.html" style="flex:1;font-size:12px;background:var(--surface);" onclick="this.select()" />
+            <button class="btn" onclick="copyUploadUrl()">コピー</button>
+          </div>
+        </div></div>
         <div class="card"><div class="card-body">
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">採点するテストを1つ選んでください。1回の一括採点は1テスト分です。</p>
           <div id="selectTestList" style="display:flex;flex-direction:column;gap:8px;"><p style="color:var(--text-muted);font-size:12px;">読み込み中…</p></div>
@@ -727,16 +735,25 @@ textarea { resize: vertical; min-height: 60px; }
       </div>
 
       <div id="page-class" class="hidden">
-        <div class="page-title">クラス結果</div>
-        <div class="card"><div class="card-body">
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">選択中テストの全員の結果です。行をクリックすると個票が開きます。</p>
-          <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
-            <thead><tr style="border-bottom:2px solid var(--border);text-align:left;color:var(--text-muted);"><th style="padding:8px;">生徒</th><th>得点</th><th>正答率</th><th>苦手分野</th><th>状態</th></tr></thead>
-            <tbody id="classBody"><tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted);">—</td></tr></tbody>
-          </table>
-          </div>
-        </div></div>
+        <div class="page-title">結果・再印刷</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-primary" id="rtab-jobs-btn" onclick="switchResultTab('jobs')">採点ジョブ一覧</button>
+          <button class="btn" id="rtab-student-btn" onclick="switchResultTab('student')">生徒で検索</button>
+        </div>
+        <div id="rtab-jobs">
+          <div class="card"><div class="card-body">
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">採点した回（ジョブ）ごとの一覧です。ジョブを開くと生徒ごとの個票を再印刷できます。</p>
+            <div id="jobsList"><p style="color:var(--text-muted);font-size:12px;">読み込み中…</p></div>
+          </div></div>
+        </div>
+        <div id="rtab-student" class="hidden">
+          <div class="card"><div class="card-body">
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">生徒名で過去の採点履歴を探します（面談用）。</p>
+            <input type="text" id="stuSearchInput" placeholder="生徒名・よみで検索" style="width:100%;margin-bottom:10px;" oninput="renderStudentSearch()" />
+            <div id="stuSearchList"></div>
+            <div id="stuHistory" style="margin-top:12px;"></div>
+          </div></div>
+        </div>
       </div>
 
       <div id="page-settings" class="hidden">
@@ -746,6 +763,8 @@ textarea { resize: vertical; min-height: 60px; }
           <input type="text" id="settingsGasUrl" placeholder="https://script.google.com/macros/s/..." style="width:100%;margin-bottom:14px;" />
           <label class="login-label" style="text-align:left;">会員管理GAS URL（生徒名簿の取得用・Class Boardと同じもの）</label>
           <input type="text" id="settingsMemberGasUrl" placeholder="https://script.google.com/macros/s/..." style="width:100%;margin-bottom:14px;" />
+          <label class="login-label" style="text-align:left;">GAS保護パスワード（スマホと共通）</label>
+          <input type="text" id="settingsUploadPass" placeholder="採点GASのScript Property UPLOAD_PASSに設定したパスワード" style="width:100%;margin-bottom:14px;" />
           <label class="login-label" style="text-align:left;">管理画面パスワード（変更する場合）</label>
           <input type="password" id="settingsNewPw" placeholder="新しいパスワードを入力" style="width:100%;margin-bottom:14px;" />
           <button class="btn btn-primary" onclick="saveSettings()">💾 保存する</button>
@@ -767,6 +786,7 @@ function saveConfig(c){ localStorage.setItem(CONFIG_KEY, JSON.stringify(c)); }
 var cfg = loadConfig();
 var GAS_URL = cfg.gasUrl || '';
 var MEMBER_GAS_URL = cfg.memberGasUrl || '';
+var UPLOAD_PASS = cfg.uploadPass || '';   // GAS保護のパスワード（採点GASのScript Property UPLOAD_PASSと一致させる。スマホupload.htmlと共通）
 var PW = cfg.pw || 'kurofune001';
 var allTests = [];
 var allStudents = [];   // 会員管理から取得した在籍生名簿（名前照合用）
@@ -774,7 +794,8 @@ var selectedTestId = cfg.selectedTestId || '';
 var selectedTestName = '';
 var batchImages = [];
 
-function gasCall(payload){ return fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) }).then(function(r){ return r.json(); }); }
+function gasCall(payload){ var _p={}; for(var _k in payload){ _p[_k]=payload[_k]; } _p.pass=UPLOAD_PASS; return fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(_p) }).then(function(r){ return r.json(); }); }
+function copyUploadUrl(){ var el=document.getElementById('uploadPageUrl'); if(!el){ return; } el.select(); try{ document.execCommand('copy'); showToast('スマホ用URLをコピーしました'); }catch(e){ showToast('コピーできませんでした'); } }
 // 会員管理GAS（別プロジェクト）を叩く。Class Boardと同方式
 function memberGasCall(payload){ var qs=Object.keys(payload).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(payload[k]); }).join('&'); /* 会員管理GASはactionをクエリ(e.parameter)で受ける＝Class Boardと同方式。POST本文JSONだとactionが空になり不明なアクション扱いになる(2026-07-01川上さん実機で確認) */ return fetch(MEMBER_GAS_URL+'?'+qs, { redirect:'follow' }).then(function(r){ return r.json(); }); }
 // 在籍生名簿を取得してメモリに保持（退会・休会は会員管理GAS側で除外済み）
@@ -794,11 +815,11 @@ function showToast(msg){ var t=document.getElementById('toast'); t.textContent=m
 function doLogin(){ var v=document.getElementById('loginPw').value; if(v===PW){ document.getElementById('loginScreen').style.display='none'; document.getElementById('appScreen').style.display='block'; enterApp(); } else { document.getElementById('loginErr').style.display='block'; } }
 function doLogout(){ location.reload(); }
 
-function enterApp(){ document.getElementById('gasStatusLabel').textContent = GAS_URL ? 'GAS接続済み' : 'GAS未設定'; document.getElementById('settingsGasUrl').value = GAS_URL; document.getElementById('settingsMemberGasUrl').value = MEMBER_GAS_URL; loadStudentRoster(); loadTestList(); }
+function enterApp(){ document.getElementById('gasStatusLabel').textContent = GAS_URL ? 'GAS接続済み' : 'GAS未設定'; document.getElementById('settingsGasUrl').value = GAS_URL; document.getElementById('settingsMemberGasUrl').value = MEMBER_GAS_URL; document.getElementById('settingsUploadPass').value = UPLOAD_PASS; loadStudentRoster(); loadTestList(); }
 
-function showPage(p){ ['select','upload','class','settings'].forEach(function(x){ document.getElementById('page-'+x).classList.toggle('hidden', x!==p); document.getElementById('nav-'+x).classList.toggle('active', x===p); }); if(p==='upload') renderUpload(); if(p==='class') renderClass(); }
+function showPage(p){ ['select','upload','class','settings'].forEach(function(x){ document.getElementById('page-'+x).classList.toggle('hidden', x!==p); document.getElementById('nav-'+x).classList.toggle('active', x===p); }); if(p==='upload') renderUpload(); if(p==='class') renderResults(); }
 
-function saveSettings(){ var g=document.getElementById('settingsGasUrl').value.trim(); var m=document.getElementById('settingsMemberGasUrl').value.trim(); var np=document.getElementById('settingsNewPw').value; cfg.gasUrl=g; GAS_URL=g; cfg.memberGasUrl=m; MEMBER_GAS_URL=m; if(np){ cfg.pw=np; PW=np; } saveConfig(cfg); document.getElementById('settingsNewPw').value=''; document.getElementById('gasStatusLabel').textContent = GAS_URL ? 'GAS接続済み' : 'GAS未設定'; showToast('設定を保存しました'); loadStudentRoster(); loadTestList(); }
+function saveSettings(){ var g=document.getElementById('settingsGasUrl').value.trim(); var m=document.getElementById('settingsMemberGasUrl').value.trim(); var np=document.getElementById('settingsNewPw').value; var up=document.getElementById('settingsUploadPass').value.trim(); cfg.gasUrl=g; GAS_URL=g; cfg.memberGasUrl=m; MEMBER_GAS_URL=m; cfg.uploadPass=up; UPLOAD_PASS=up; if(np){ cfg.pw=np; PW=np; } saveConfig(cfg); document.getElementById('settingsNewPw').value=''; document.getElementById('gasStatusLabel').textContent = GAS_URL ? 'GAS接続済み' : 'GAS未設定'; showToast('設定を保存しました'); loadStudentRoster(); loadTestList(); }
 
 function loadTestList(){
   if(!GAS_URL){ document.getElementById('selectTestList').innerHTML='<p style="color:var(--text-muted);font-size:12px;">設定でGAS URLを入力してください。</p>'; return; }
@@ -985,91 +1006,117 @@ function startGrading(){
   });
 }
 
-// ============ 第4サイクル：クラス結果＋個票（モックデータ）============
-// 【第4サイクル・モック】実GAS getLogs/getDetail の代わりにダミーを返す。第5で実GASに差し替える。
-// getLogs形：選択testIdの全採点結果（1行＝1生徒）
-function mockGetLogs(testId){
-  var subj = (selectedTestName||'').indexOf('英語')>=0 ? '英語' : '数学';
-  var names = ['田中 陽斗','佐藤 美咲','鈴木 蓮','高橋 結衣','渡辺 大翔','伊藤 凛','山本 湊','中村 葵','小林 樹','加藤 莉子'];
-  var logs = [];
-  for(var i=0;i<names.length;i++){
-    var max=100;
-    var sc = [88,72,54,95,61,43,79,58,84,67][i];
-    var acc = sc; // 満点100なので得点=正答率%
-    logs.push({
-      id:'log_'+testId+'_'+(i+1),
-      datetime:'2026-06-30',
-      studentName:names[i],
-      grade:'中1',
-      testId:testId,
-      testName:selectedTestName||testId,
-      subject:subj,
-      totalScore:sc,
-      maxScore:max,
-      accuracy:acc,
-      weakPoints:['一次方程式','文章題','約分'][i%3],
-      status: acc<60 ? '要確認' : '完了'
-    });
-  }
-  return logs;
+// ============ 結果・再印刷（実GAS getLogs / getDetail）2026-07-01 実データ化 ============
+var _resultLogs = [];   // getLogs の生ログ（全件）
+function switchResultTab(which){
+  document.getElementById('rtab-jobs').classList.toggle('hidden', which!=='jobs');
+  document.getElementById('rtab-student').classList.toggle('hidden', which!=='student');
+  document.getElementById('rtab-jobs-btn').classList.toggle('btn-primary', which==='jobs');
+  document.getElementById('rtab-student-btn').classList.toggle('btn-primary', which==='student');
 }
-// getDetail形：1生徒の問題ごと詳細
-function mockGetDetail(logId){
-  var logs = mockGetLogs(selectedTestId);
-  var log = logs.find(function(x){ return x.id===logId; }) || logs[0];
-  var problems = [
-    { number:1, maxScore:20, judge:'○', correct:'x=4', studentAnswer:'x=4', explanation:'' },
-    { number:2, maxScore:20, judge:'○', correct:'x=-3', studentAnswer:'x=-3', explanation:'' },
-    { number:3, maxScore:20, judge:'△', correct:'x=7', studentAnswer:'x=6', explanation:'移項のときの符号は合っていますが、最後の割り算で計算ミスがあります。両辺を2で割る前に、もう一度左辺をそろえて確認しよう。' },
-    { number:4, maxScore:20, judge:'×', correct:'x=2, y=5', studentAnswer:'x=5, y=2', explanation:'代入する文字を取り違えています。先に求めた値をどの式のどの文字に入れるか、式に印をつけてから代入すると防げます。' },
-    { number:5, maxScore:20, judge:log.totalScore>=80?'○':'×', correct:'12cm²', studentAnswer:log.totalScore>=80?'12cm²':'24cm²', explanation: log.totalScore>=80?'':'面積の公式で「÷2」を忘れています。三角形の面積は底辺×高さ÷2。図に高さの線を書き込んでから計算しよう。' }
-  ];
-  log.problems = problems;
-  log.advice = log.totalScore>=80 ? '正答率が高く、基礎がよく身についています。応用問題にも挑戦してみよう。' : '計算ミスと公式の使い忘れが目立ちます。まずは×だった問題の解き直しから始めよう。';
-  return log;
+function renderResults(){
+  switchResultTab('jobs');
+  var box=document.getElementById('jobsList');
+  box.innerHTML='<p style="color:var(--text-muted);font-size:12px;">読み込み中…</p>';
+  document.getElementById('stuSearchInput').value='';
+  document.getElementById('stuSearchList').innerHTML='';
+  document.getElementById('stuHistory').innerHTML='';
+  gasCall({ action:'getLogs' }).then(function(res){
+    _resultLogs=(res&&res.logs)?res.logs:[];
+    renderJobs();
+  }).catch(function(e){ box.innerHTML='<p style="color:var(--danger);font-size:12px;">取得失敗: '+esc(e.message)+'</p>'; });
 }
-
-function renderClass(){
-  var body=document.getElementById('classBody');
-  if(!selectedTestId){ body.innerHTML='<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted);">先にテストを選んでください。</td></tr>'; return; }
-  var logs=mockGetLogs(selectedTestId);
-  if(!logs.length){ body.innerHTML='<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted);">まだ採点結果がありません。</td></tr>'; return; }
-  body.innerHTML=logs.map(function(l){
-    var warn = (l.accuracy<60);
-    var stBadge = l.status==='要確認' ? '<span class="badge badge-check">要確認</span>' : '<span class="badge badge-done">完了</span>';
-    return '<tr class="'+(warn?'row-warn':'')+'" style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail(\''+l.id+'\')">'+
-      '<td style="padding:8px;font-weight:700;">'+esc(l.studentName)+'</td>'+
-      '<td>'+l.totalScore+' / '+l.maxScore+'</td>'+
-      '<td style="'+(warn?'color:var(--danger);font-weight:800;':'')+'">'+l.accuracy+'%</td>'+
-      '<td style="color:var(--text-muted);">'+esc(l.weakPoints||'')+'</td>'+
-      '<td>'+stBadge+'</td>'+
-    '</tr>';
+function renderJobs(){
+  var box=document.getElementById('jobsList');
+  if(!_resultLogs.length){ box.innerHTML='<p style="color:var(--text-muted);font-size:12px;">まだ採点結果がありません。</p>'; return; }
+  var groups={}, order=[];
+  _resultLogs.forEach(function(l){ var k=l.jobId||'(未グループ)'; if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(l); });
+  box.innerHTML=order.map(function(k){
+    var arr=groups[k];
+    var testName=arr[0].testName||arr[0].testId||'';
+    var dt=arr[0].datetime||'';
+    var unlinked=arr.filter(function(l){ return !l.studentId; }).length;
+    return '<button style="width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;" onclick="openJob(\''+esc(k)+'\')">'+
+      '<div style="font-weight:800;">'+esc(testName)+'</div>'+
+      '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">'+esc(String(dt))+'　/　'+arr.length+'名'+(unlinked?('　/　未紐づけ'+unlinked+'名'):'')+'</div></button>';
   }).join('');
 }
+function openJob(jobId){
+  var arr=_resultLogs.filter(function(l){ return (l.jobId||'(未グループ)')===jobId; });
+  var rows=arr.map(function(l){ return logRowHtml(l); }).join('');
+  var title=(arr[0]?(arr[0].testName||''):'');
+  document.getElementById('jobsList').innerHTML=
+    '<div style="margin-bottom:10px;"><button class="btn" onclick="renderJobs()">← ジョブ一覧へ</button></div>'+
+    '<div style="font-weight:800;margin-bottom:8px;">'+esc(title)+'</div>'+
+    '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead><tr style="border-bottom:2px solid var(--border);text-align:left;color:var(--text-muted);"><th style="padding:8px;">生徒</th><th>得点</th><th>正答率</th><th>状態</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+function logRowHtml(l){
+  var warn=(Number(l.accuracy)<60);
+  var name=l.studentName||'(未読取)';
+  var linked = l.studentId ? '<span class="badge badge-done">紐づけ済</span>' : '<span class="badge badge-check">未紐づけ</span>';
+  return '<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail(\''+esc(l.id)+'\')">'+
+    '<td style="padding:8px;font-weight:700;">'+esc(name)+'</td>'+
+    '<td>'+esc(String(l.totalScore))+' / '+esc(String(l.maxScore))+'</td>'+
+    '<td style="'+(warn?'color:var(--danger);font-weight:800;':'')+'">'+esc(String(l.accuracy))+'%</td>'+
+    '<td>'+linked+'</td></tr>';
+}
+function renderStudentSearch(){
+  var q=document.getElementById('stuSearchInput').value;
+  var list=document.getElementById('stuSearchList');
+  document.getElementById('stuHistory').innerHTML='';
+  if(!q.trim()){ list.innerHTML='<p style="font-size:11.5px;color:var(--text-muted);">名前を入力してください。</p>'; return; }
+  var res=searchStudents(q);
+  if(!res.length){ list.innerHTML='<p style="font-size:11.5px;color:var(--text-muted);">該当する生徒がいません。名簿が未取得の場合は設定で会員管理GAS URLを確認してください。</p>'; return; }
+  list.innerHTML=res.slice(0,20).map(function(m){
+    return '<button class="btn" style="margin:0 6px 6px 0;" onclick="openStudentHistory(\''+esc(studentKey(m))+'\',\''+esc(m.name)+'\')">'+esc(m.name)+'<span style="color:var(--text-muted);font-weight:400;margin-left:4px;font-size:11px;">'+esc(m.grade||'')+'</span></button>';
+  }).join('');
+}
+function openStudentHistory(sid, name){
+  var box=document.getElementById('stuHistory');
+  box.innerHTML='<p style="font-size:12px;color:var(--text-muted);">読み込み中…</p>';
+  gasCall({ action:'getLogs', studentId:sid }).then(function(res){
+    var logs=(res&&res.logs)?res.logs:[];
+    if(!logs.length){ box.innerHTML='<p style="font-size:12px;color:var(--text-muted);">'+esc(name)+' さんの採点履歴はまだありません。</p>'; return; }
+    var rows=logs.map(function(l){
+      return '<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail(\''+esc(l.id)+'\')">'+
+        '<td style="padding:8px;">'+esc(String(l.datetime))+'</td>'+
+        '<td style="font-weight:700;">'+esc(l.testName||'')+'</td>'+
+        '<td>'+esc(String(l.totalScore))+'/'+esc(String(l.maxScore))+'</td>'+
+        '<td>'+esc(String(l.accuracy))+'%</td></tr>';
+    }).join('');
+    box.innerHTML='<div style="font-weight:800;margin-bottom:6px;">'+esc(name)+' さんの履歴</div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead><tr style="border-bottom:2px solid var(--border);text-align:left;color:var(--text-muted);"><th style="padding:8px;">日付</th><th>テスト</th><th>得点</th><th>正答率</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).catch(function(e){ box.innerHTML='<p style="color:var(--danger);font-size:12px;">取得失敗: '+esc(e.message)+'</p>'; });
+}
 
+// 個票判定：full=○ / partial=△ / それ以外=×（changelog同日5回目：judgeOf(isCorrect/score/maxScore)）
+function judgeOf(p){
+  if(p.isCorrect===true || p.isCorrect==='true'){ return '○'; }
+  var sc=Number(p.score||0), mx=Number(p.maxScore||0);
+  if(sc>0 && sc<mx){ return '△'; }
+  return '×';
+}
 function judgeColor(j){ return j==='○'?'var(--success)':(j==='×'?'var(--danger)':'#b45309'); }
-
 function buildDetailHtml(log, forPrint){
-  var probRows = (log.problems||[]).map(function(p){
-    var ex = p.explanation ? '<div style="margin-top:4px;color:#1d4ed8;font-size:12px;line-height:1.6;">'+esc(p.explanation)+'</div>' : '';
+  var probRows=(log.problems||[]).map(function(p){
+    var j=judgeOf(p);
+    var pn=/^問|^質問/.test(String(p.number))?p.number:('問'+p.number);
+    var ex=p.explanation?'<div style="margin-top:4px;color:#1d4ed8;font-size:12px;line-height:1.6;">'+esc(p.explanation)+'</div>':'';
     return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">'+
-      '<span style="font-weight:800;color:'+judgeColor(p.judge)+';font-size:15px;">'+esc(p.judge)+'</span> '+
-      '<span style="font-weight:700;">問'+p.number+'</span> '+
-      '<span style="color:var(--text-muted);font-size:11px;">（'+p.maxScore+'点）</span> '+
-      '<span style="color:var(--text-muted);font-size:11px;">正解: '+esc(p.correct)+' / 解答: '+esc(p.studentAnswer)+'</span>'+
-      ex+
-    '</div>';
+      '<span style="font-weight:800;color:'+judgeColor(j)+';font-size:15px;">'+j+'</span> '+
+      '<span style="font-weight:700;">'+esc(pn)+'</span> '+
+      '<span style="color:var(--text-muted);font-size:11px;">（'+esc(String(p.score))+'/'+esc(String(p.maxScore))+'点）</span> '+
+      '<span style="color:var(--text-muted);font-size:11px;">正解: '+esc(p.correctAnswer)+' / 解答: '+esc(p.studentAnswer)+'</span>'+ex+'</div>';
   }).join('');
   return ''+
     '<div style="'+(forPrint?'':'padding:4px 2px;')+'">'+
       '<div style="text-align:center;border-bottom:2px solid var(--crimson);padding-bottom:8px;margin-bottom:10px;">'+
         '<div style="font-size:12px;color:var(--text-muted);">進学塾クロフネ</div>'+
         '<div style="font-size:16px;font-weight:800;">'+esc(log.testName)+'　個人成績票</div>'+
-        '<div style="font-size:12px;color:var(--text-muted);">'+esc(log.subject)+'　/　'+esc(log.studentName)+'　/　'+esc(log.datetime)+'</div>'+
+        '<div style="font-size:12px;color:var(--text-muted);">'+esc(log.subject)+'　/　'+esc(log.studentName)+'　/　'+esc(String(log.datetime))+'</div>'+
       '</div>'+
-      '<div style="display:flex;gap:14px;margin-bottom:10px;font-size:13px;">'+
-        '<div><span style="color:var(--text-muted);">得点</span> <strong style="font-size:18px;">'+log.totalScore+'</strong> / '+log.maxScore+'</div>'+
-        '<div><span style="color:var(--text-muted);">正答率</span> <strong style="font-size:18px;'+(log.accuracy<60?'color:var(--danger);':'')+'">'+log.accuracy+'%</strong></div>'+
+      '<div style="display:flex;gap:14px;margin-bottom:10px;font-size:13px;flex-wrap:wrap;">'+
+        '<div><span style="color:var(--text-muted);">得点</span> <strong style="font-size:18px;">'+esc(String(log.totalScore))+'</strong> / '+esc(String(log.maxScore))+'</div>'+
+        '<div><span style="color:var(--text-muted);">正答率</span> <strong style="font-size:18px;'+(Number(log.accuracy)<60?'color:var(--danger);':'')+'">'+esc(String(log.accuracy))+'%</strong></div>'+
         '<div><span style="color:var(--text-muted);">苦手分野</span> <strong>'+esc(log.weakPoints||'—')+'</strong></div>'+
       '</div>'+
       '<div style="font-weight:800;font-size:13px;margin:8px 0 2px;">問題ごとの判定</div>'+
@@ -1078,23 +1125,27 @@ function buildDetailHtml(log, forPrint){
       '<div style="font-size:12.5px;line-height:1.7;background:var(--surface);border-radius:8px;padding:10px;">'+esc(log.advice||'')+'</div>'+
     '</div>';
 }
-
 var currentDetailLog=null;
 function openDetail(logId){
-  var log=mockGetDetail(logId);
-  currentDetailLog=log;
-  document.getElementById('detailTitle').textContent=log.studentName+' の個票';
-  document.getElementById('detailContent').innerHTML=
-    buildDetailHtml(log,false)+
-    '<div style="text-align:right;margin-top:12px;"><button class="btn btn-primary" onclick="printDetail()">🖨 個票を印刷</button></div>';
+  var content=document.getElementById('detailContent');
+  document.getElementById('detailTitle').textContent='個票';
+  content.innerHTML='<p style="color:var(--text-muted);font-size:12px;">読み込み中…</p>';
   document.getElementById('detailModal').classList.add('show');
+  gasCall({ action:'getDetail', logId:logId }).then(function(res){
+    if(!res||!res.success||!res.log){ content.innerHTML='<p style="color:var(--danger);">取得失敗: '+esc((res&&res.error)||'')+'</p>'; return; }
+    var log=res.log; currentDetailLog=log;
+    document.getElementById('detailTitle').textContent=(log.studentName||'個票')+' の個票';
+    content.innerHTML=buildDetailHtml(log,false)+'<div style="text-align:right;margin-top:12px;"><button class="btn btn-primary" onclick="printDetail()">🖨 個票を印刷</button></div>';
+    if(window.MathJax&&MathJax.typesetPromise){ MathJax.typesetPromise([content]).catch(function(){}); }
+  }).catch(function(e){ content.innerHTML='<p style="color:var(--danger);">取得失敗: '+esc(e.message)+'</p>'; });
 }
 function printDetail(){
   if(!currentDetailLog){ return; }
-  document.getElementById('printArea').innerHTML=buildDetailHtml(currentDetailLog,true);
-  window.print();
+  var pa=document.getElementById('printArea');
+  pa.innerHTML=buildDetailHtml(currentDetailLog,true);
+  if(window.MathJax&&MathJax.typesetPromise){ MathJax.typesetPromise([pa]).then(function(){ window.print(); }).catch(function(){ window.print(); }); }
+  else { window.print(); }
 }
-
 function closeDetail(){ document.getElementById('detailModal').classList.remove('show'); }
 </script>
 </body>
