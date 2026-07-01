@@ -776,7 +776,7 @@ var batchImages = [];
 
 function gasCall(payload){ return fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) }).then(function(r){ return r.json(); }); }
 // 会員管理GAS（別プロジェクト）を叩く。Class Boardと同方式
-function memberGasCall(payload){ return fetch(MEMBER_GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) }).then(function(r){ return r.json(); }); }
+function memberGasCall(payload){ var qs=Object.keys(payload).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(payload[k]); }).join('&'); /* 会員管理GASはactionをクエリ(e.parameter)で受ける＝Class Boardと同方式。POST本文JSONだとactionが空になり不明なアクション扱いになる(2026-07-01川上さん実機で確認) */ return fetch(MEMBER_GAS_URL+'?'+qs, { redirect:'follow' }).then(function(r){ return r.json(); }); }
 // 在籍生名簿を取得してメモリに保持（退会・休会は会員管理GAS側で除外済み）
 function loadStudentRoster(){
   if(!MEMBER_GAS_URL){ allStudents=[]; return Promise.resolve([]); }
