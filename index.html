@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20100%27%3E%3Ctext%20y%3D%27.9em%27%20font-size%3D%2790%27%3E%F0%9F%93%9D%3C/text%3E%3C/svg%3E">
+<title>一括採点 管理画面｜クロフネ</title>
+<script>
+MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']], processEscapes: true }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+:root {
+  --crimson: #C6000B;
+  --crimson-dark: #A00008;
+  --crimson-light: #FFF0F0;
+  --crimson-mid: #f4a0a5;
+  --surface: #f4f6f9;
+  --surface2: #edf0f5;
+  --border: #dde3ec;
+  --text: #1a2535;
+  --text-muted: #5a6a7e;
+  --text-light: #94a3b8;
+  --success: #16a34a;
+  --success-light: #f0fdf4;
+  --success-border: #86efac;
+  --warning: #d97706;
+  --warning-light: #fefce8;
+  --warning-border: #fde68a;
+  --danger: #dc2626;
+  --danger-light: #fef2f2;
+  --danger-border: #fca5a5;
+  --blue: #2563eb;
+  --blue-light: #eff6ff;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 4px 12px rgba(0,0,0,0.08);
+  --radius: 10px;
+  --sidebar-w: 160px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ===== ログイン ===== */
+#loginScreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--surface);
+  padding: 20px;
+}
+.login-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 340px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.login-logo { font-size: 2rem; margin-bottom: 12px; display: block; }
+.login-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.login-sub { font-size: 11.5px; color: var(--text-muted); margin-bottom: 24px; }
+.login-label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: left; margin-bottom: 6px; letter-spacing: 0.05em; }
+.login-input {
+  width: 100%; padding: 10px 13px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 14px; font-family: inherit; color: var(--text);
+  transition: border-color 0.15s;
+}
+.login-input:focus { outline: none; border-color: var(--crimson); box-shadow: 0 0 0 3px rgba(198,0,11,0.1); }
+.login-btn {
+  width: 100%; margin-top: 14px; padding: 11px;
+  background: var(--crimson); color: white;
+  border: none; border-radius: 8px;
+  font-size: 13.5px; font-weight: 700; cursor: pointer;
+  font-family: inherit; letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(198,0,11,0.25);
+  transition: background 0.15s;
+}
+.login-btn:hover { background: var(--crimson-dark); }
+.login-err { font-size: 11.5px; color: var(--danger); margin-top: 10px; display: none; }
+
+/* ===== アプリレイアウト ===== */
+#appScreen { display: none; min-height: 100vh; }
+.topbar {
+  background: var(--crimson);
+  color: white;
+  height: 48px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 6px rgba(198,0,11,0.2);
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-logo { font-size: 1rem; }
+.topbar-title { font-size: 13px; font-weight: 800; letter-spacing: 0.02em; }
+.topbar-badge {
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 2px 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.topbar-status { font-size: 11px; opacity: 0.8; }
+.topbar-logout {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.topbar-logout:hover { background: rgba(255,255,255,0.25); }
+
+.layout { display: flex; min-height: calc(100vh - 48px); }
+
+/* ===== サイドナビ ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: white;
+  border-right: 1px solid var(--border);
+  padding: 12px 0;
+  position: sticky;
+  top: 48px;
+  height: calc(100vh - 48px);
+  overflow: visible;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  border-left: 3px solid transparent;
+  transition: all 0.12s;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+}
+.nav-item:hover { background: var(--surface); color: var(--text); }
+.nav-item.active { background: var(--crimson-light); color: var(--crimson); border-left-color: var(--crimson); font-weight: 700; }
+.nav-icon { font-size: 14px; flex-shrink: 0; }
+
+/* ===== メイン ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 20px;
+  max-width: 960px;
+}
+.page-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 16px;
+  letter-spacing: 0.01em;
+}
+
+/* ===== カード ===== */
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #fafbfc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.card-body { padding: 16px; }
+
+/* ===== 統計グリッド ===== */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.stat-num { font-size: 1.8rem; font-weight: 900; color: var(--crimson); line-height: 1; }
+.stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+
+/* ===== フィルターバー ===== */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
+}
+.filter-label { font-size: 11px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.filter-select {
+  padding: 5px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text);
+  background: white;
+  cursor: pointer;
+}
+.filter-select:focus { outline: none; border-color: var(--crimson); }
+.filter-divider { width: 1px; height: 18px; background: var(--border); }
+
+/* ===== ボタン ===== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 14px; border-radius: 7px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  border: none; font-family: inherit; transition: all 0.12s;
+  letter-spacing: 0.01em; white-space: nowrap;
+}
+.btn-primary { background: var(--crimson); color: white; box-shadow: 0 1px 3px rgba(198,0,11,0.2); }
+.btn-primary:hover:not(:disabled) { background: var(--crimson-dark); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-outline { background: white; color: var(--text-muted); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: #9ca3af; color: var(--text); }
+.btn-sm { padding: 5px 11px; font-size: 11.5px; }
+.btn-ghost { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-danger-sm {
+  background: var(--danger-light); color: var(--danger);
+  border: 1px solid var(--danger-border);
+  border-radius: 6px; padding: 5px 10px;
+  font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+
+/* ===== テーブル ===== */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th {
+  background: #f8f9fb;
+  padding: 9px 13px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+}
+th.sortable { cursor: pointer; }
+th.sortable:hover { color: var(--text); }
+td {
+  padding: 10px 13px;
+  border-bottom: 1px solid #f0f2f5;
+  vertical-align: middle;
+  color: var(--text);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafbfc; }
+
+/* ===== バッジ ===== */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.badge-high { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+.badge-mid  { background: var(--warning-light);  color: var(--warning); border: 1px solid var(--warning-border); }
+.badge-low  { background: var(--danger-light);   color: var(--danger);  border: 1px solid var(--danger-border); }
+.badge-subject { background: var(--blue-light); color: var(--blue); border: 1px solid #bfdbfe; }
+
+/* ===== フォーム ===== */
+label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  margin-top: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+label:first-of-type { margin-top: 0; }
+.req { color: var(--crimson); }
+input[type="text"], input[type="password"], select, textarea {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: var(--text);
+  background: white;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--crimson);
+  box-shadow: 0 0 0 3px rgba(198,0,11,0.1);
+}
+textarea { resize: vertical; min-height: 60px; }
+.form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ===== 問題行（新テンプレ式） ===== */
+.problem-card {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #fafbfc;
+  position: relative;
+}
+.problem-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.problem-num-badge {
+  font-size: 11px; font-weight: 800;
+  color: white; background: var(--crimson);
+  border-radius: 5px; padding: 2px 8px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.problem-card-body {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+}
+.score-btns { display: flex; gap: 3px; flex-wrap: wrap; }
+.score-btn {
+  padding: 3px 7px; border-radius: 5px;
+  border: 1.5px solid var(--border);
+  background: white; font-size: 11px; font-weight: 700;
+  color: var(--text-muted); cursor: pointer; font-family: inherit;
+  transition: all 0.1s; line-height: 1.4; white-space: nowrap;
+}
+.score-btn:hover { border-color: var(--crimson); color: var(--crimson); }
+.score-btn.active { background: var(--crimson); border-color: var(--crimson); color: white; }
+.score-custom { width: 52px; padding: 4px 6px; font-size: 12px; text-align: center; }
+.problem-memo-toggle {
+  font-size: 11px; color: var(--blue); cursor: pointer;
+  background: none; border: none; font-family: inherit;
+  padding: 0; margin-top: 6px; display: inline-flex; align-items: center; gap: 3px;
+}
+.problem-memo-area { display: none; margin-top: 6px; }
+.problem-memo-area.open { display: block; }
+.move-btns { display: flex; flex-direction: column; gap: 3px; }
+.move-btn {
+  width: 24px; height: 24px; border-radius: 5px;
+  border: 1px solid var(--border); background: white;
+  font-size: 11px; cursor: pointer; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.1s;
+}
+.move-btn:hover { background: var(--surface2); color: var(--text); }
+.del-btn {
+  width: 24px; height: 24px; border-radius: 5px;
+  border: 1px solid var(--danger-border); background: var(--danger-light);
+  font-size: 12px; cursor: pointer; color: var(--danger);
+  display: flex; align-items: center; justify-content: center; margin-top: 3px;
+}
+
+/* 小問スイッチ */
+.toggle-wrap { display: flex; align-items: center; gap: 8px; }
+.toggle-switch {
+  position: relative; width: 36px; height: 20px;
+  display: inline-block; flex-shrink: 0;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--border); border-radius: 20px; cursor: pointer;
+  transition: 0.2s;
+}
+.toggle-slider:before {
+  content: ''; position: absolute;
+  width: 14px; height: 14px; left: 3px; bottom: 3px;
+  background: white; border-radius: 50%; transition: 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--crimson); }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+/* D&D */
+.problem-card.drag-over {
+  border-color: var(--crimson);
+  background: var(--crimson-light);
+}
+.grip-handle { cursor: grab; user-select: none; }
+.grip-handle:active { cursor: grabbing; }
+
+/* 満点モードトグル */
+.score-mode-btn {
+  padding: 4px 12px; font-size: 11.5px; font-weight: 700;
+  font-family: inherit; cursor: pointer; border: none;
+  background: white; color: var(--text-muted);
+  transition: all 0.12s;
+}
+.score-mode-btn + .score-mode-btn { border-left: 1.5px solid var(--border); }
+.score-mode-btn.active { background: var(--crimson); color: white; }
+.score-mode-btn:not(.active):hover { background: var(--surface2); color: var(--text); }
+
+/* 挿入ボタン行 */
+.insert-row {
+  display: flex; justify-content: center;
+  margin: 2px 0;
+  position: relative;
+}
+.insert-row::before {
+  content: '';
+  position: absolute; top: 50%; left: 0; right: 0;
+  height: 1px; background: var(--border);
+  z-index: 0;
+}
+.insert-btn {
+  position: relative; z-index: 1;
+  background: white; border: 1.5px dashed var(--border);
+  border-radius: 6px; color: var(--text-muted);
+  font-size: 11px; font-weight: 600; font-family: inherit;
+  padding: 3px 14px; cursor: pointer;
+  transition: all 0.12s; white-space: nowrap;
+}
+.insert-btn:hover {
+  border-color: var(--crimson); color: var(--crimson);
+  background: var(--crimson-light);
+}
+
+/* ===== モーダル ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,37,53,0.45);
+  z-index: 200;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+  padding: 24px;
+  width: 100%;
+  max-width: 680px;
+  margin: auto;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title { font-size: 14px; font-weight: 800; color: var(--text); }
+.modal-close {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+  transition: all 0.12s;
+}
+.modal-close:hover { background: var(--surface2); color: var(--text); }
+
+/* ===== 詳細モーダルの中身 ===== */
+.detail-score-row {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 16px; background: var(--crimson); border-radius: 9px;
+  margin-bottom: 16px; color: white;
+}
+.detail-score-big { font-size: 2.6rem; font-weight: 900; line-height: 1; }
+.detail-score-sub { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+.detail-pct {
+  background: rgba(255,255,255,0.2);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: auto;
+}
+.problem-mini {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 7px;
+  background: white;
+}
+.problem-mini.correct { border-color: var(--success-border); background: var(--success-light); }
+.problem-mini.wrong   { border-color: var(--danger-border);  background: var(--danger-light); }
+.problem-mini.partial { border-color: var(--warning-border); background: var(--warning-light); }
+.problem-mini-header {
+  display: flex; justify-content: space-between;
+  font-size: 12px; font-weight: 700; margin-bottom: 5px;
+}
+.pm-explanation { font-size: 11.5px; color: var(--text); line-height: 1.7; margin-top: 5px; }
+.pm-warn {
+  font-size: 11px; background: #fef3c7;
+  color: #92400e; border-radius: 5px;
+  padding: 4px 8px; margin-top: 4px;
+  border: 1px solid var(--warning-border);
+}
+.image-thumb {
+  max-width: 100%; max-height: 280px;
+  border-radius: 8px; border: 1px solid var(--border);
+  cursor: zoom-in; display: block;
+  box-shadow: var(--shadow-sm);
+}
+.section-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--text-muted); margin-bottom: 8px;
+  margin-top: 16px; letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.section-label:first-child { margin-top: 0; }
+
+.info-block {
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  margin-top: 8px;
+}
+.info-block-teacher { background: var(--success-light); border: 1px solid var(--success-border); color: #166534; }
+.info-block-advice  { background: var(--blue-light); border: 1px solid #bfdbfe; color: #1e40af; }
+.info-block-weak    { background: var(--warning-light); border: 1px solid var(--warning-border); color: #92400e; }
+
+/* ===== トースト ===== */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: #1a2535; color: white;
+  padding: 10px 20px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; z-index: 9999;
+  opacity: 0; transition: opacity 0.25s;
+  white-space: nowrap; pointer-events: none;
+  box-shadow: var(--shadow);
+}
+.toast.show { opacity: 1; }
+
+.hidden { display: none !important; }
+
+/* ===== サイドバー APIコスト ===== */
+.sidebar-cost-wrap {
+  position: relative;
+  margin-top: auto;
+  padding: 10px 10px 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+}
+.sidebar-cost-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.12s;
+}
+.sidebar-cost-btn:hover { background: var(--surface2); color: var(--text); }
+.sidebar-cost-popup {
+  display: none;
+  position: fixed;
+  width: 220px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+  padding: 14px 15px;
+  z-index: 9999;
+  pointer-events: none;
+}
+.sidebar-cost-popup.show { display: block; }
+.cost-popup-title { font-size: 12px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+.cost-popup-model { font-size: 10.5px; color: var(--text-muted); margin-bottom: 10px; }
+.cost-popup-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.cost-popup-label { font-size: 11px; color: var(--text-muted); }
+.cost-popup-val { font-size: 11.5px; font-weight: 600; color: var(--text); }
+.cost-popup-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+.cost-popup-total {
+  font-size: 15px; font-weight: 900;
+  color: var(--crimson); text-align: center;
+  margin: 6px 0 8px;
+}
+.cost-popup-note { font-size: 10px; color: var(--text-muted); line-height: 1.6; }
+
+.bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 56px; background: white;
+  border-top: 1px solid var(--border);
+  z-index: 150;
+}
+.bottom-nav button {
+  flex: 1; border: none; background: none;
+  font-size: 10px; font-weight: 700; color: var(--text-muted);
+  font-family: inherit; cursor: pointer; padding: 6px 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+}
+.bottom-nav button.active { color: var(--crimson); }
+@media (max-width: 640px) {
+  .sidebar { display: none; }
+  .bottom-nav { display: flex; }
+  body { padding-bottom: 56px; }
+  .main { padding: 14px; }
+  .stat-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-num { font-size: 1.4rem; }
+}
+</style>
+
+<style>
+.batch-test-banner{display:flex;align-items:center;gap:10px;background:var(--crimson-light);border:1px solid var(--crimson-mid);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--crimson-dark);font-weight:700;}
+.thumb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:12px;}
+.thumb-cell{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;position:relative;}
+.thumb-cell img{width:100%;height:96px;object-fit:cover;display:block;background:#f0f0f0;}
+.thumb-meta{padding:6px 8px;font-size:11px;}
+.badge{display:inline-block;font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px;}
+.badge-wait{background:#eef1f5;color:#5a6a7e;}
+.badge-doing{background:#e0ecff;color:#1d4ed8;}
+.badge-done{background:var(--success-light);color:var(--success);}
+.badge-check{background:#fff7e0;color:#b45309;}
+.badge-fail{background:#ffeaea;color:var(--danger);}
+.progress-wrap{height:10px;background:var(--surface2);border-radius:999px;overflow:hidden;margin:10px 0;}
+.progress-bar{height:100%;background:var(--crimson);width:0%;transition:width .3s;}
+.row-warn{background:#fffbeb;}
+@media print{ body *{visibility:hidden;} #printArea, #printArea *{visibility:visible;} #printArea{position:absolute;left:0;top:0;width:100%;padding:14mm;} @page{size:A4 portrait;margin:0;} }
+#printArea{display:none;}
+</style>
+
+<body>
+<div id="loginScreen">
+  <div class="login-card">
+    <span class="login-logo">📝</span>
+    <div class="login-title">一括採点 管理画面</div>
+    <div class="login-sub">進学塾クロフネ｜先生用</div>
+    <label class="login-label">パスワード</label>
+    <input type="password" class="login-input" id="loginPw" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter') doLogin()" />
+    <button class="login-btn" onclick="doLogin()">ログイン</button>
+    <p class="login-err" id="loginErr">パスワードが違います</p>
+  </div>
+</div>
+
+<div id="appScreen" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><span class="topbar-logo">📝</span><span class="topbar-title">一括採点</span><span class="topbar-badge">クロフネ</span></div>
+    <div class="topbar-right"><span class="topbar-status" id="gasStatusLabel"></span><button class="topbar-logout" onclick="doLogout()">ログアウト</button></div>
+  </div>
+  <div class="layout">
+    <div class="sidebar">
+      <button class="nav-item active" id="nav-select" onclick="showPage('select')"><span class="nav-icon">📚</span>テスト選択</button>
+      <button class="nav-item" id="nav-upload" onclick="showPage('upload')"><span class="nav-icon">📷</span>一括採点</button>
+      <button class="nav-item" id="nav-class" onclick="showPage('class')"><span class="nav-icon">📊</span>クラス結果</button>
+      <button class="nav-item" id="nav-settings" onclick="showPage('settings')"><span class="nav-icon">⚙️</span>設定</button>
+    </div>
+    <div class="main">
+
+      <div id="page-select">
+        <div class="page-title">テストを選ぶ</div>
+        <div class="card"><div class="card-body">
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">採点するテストを1つ選んでください。1回の一括採点は1テスト分です。</p>
+          <div id="selectTestList" style="display:flex;flex-direction:column;gap:8px;"><p style="color:var(--text-muted);font-size:12px;">読み込み中…</p></div>
+        </div></div>
+      </div>
+
+      <div id="page-upload" class="hidden">
+        <div class="page-title">一括採点</div>
+        <div id="uploadNoTest" class="card"><div class="card-body"><p style="font-size:13px;color:var(--text-muted);">先に「テスト選択」でテストを選んでください。</p></div></div>
+        <div id="uploadMain" style="display:none;">
+          <div class="batch-test-banner"><span>📚</span><span id="uploadTestName">—</span></div>
+          <div class="card"><div class="card-body">
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">答案を撮影、またはファイルを選んで追加します（1枚＝1人）。</p>
+            <input type="file" id="fileInput" accept="image/*" capture="environment" multiple style="display:none;" onchange="onFilesPicked(event)" />
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">📷 答案を追加</button>
+            <button class="btn btn-primary" id="gradeStartBtn" style="display:none;margin-left:8px;" onclick="startGrading()">🎯 採点開始</button>
+            <div class="progress-wrap" id="progWrap" style="display:none;"><div class="progress-bar" id="progBar"></div></div>
+            <div id="progLabel" style="font-size:12px;color:var(--text-muted);"></div>
+            <div class="thumb-grid" id="thumbGrid"></div>
+          </div></div>
+        </div>
+      </div>
+
+      <div id="page-class" class="hidden">
+        <div class="page-title">クラス結果</div>
+        <div class="card"><div class="card-body">
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">選択中テストの全員の結果です。行をクリックすると個票が開きます。</p>
+          <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead><tr style="border-bottom:2px solid var(--border);text-align:left;color:var(--text-muted);"><th style="padding:8px;">生徒</th><th>得点</th><th>正答率</th><th>苦手分野</th><th>状態</th></tr></thead>
+            <tbody id="classBody"><tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted);">—</td></tr></tbody>
+          </table>
+          </div>
+        </div></div>
+      </div>
+
+      <div id="page-settings" class="hidden">
+        <div class="page-title">設定</div>
+        <div class="card"><div class="card-body">
+          <label class="login-label" style="text-align:left;">GASエンドポイントURL（採点用）</label>
+          <input type="text" id="settingsGasUrl" placeholder="https://script.google.com/macros/s/..." style="width:100%;margin-bottom:14px;" />
+          <label class="login-label" style="text-align:left;">会員管理GAS URL（生徒名簿の取得用・Class Boardと同じもの）</label>
+          <input type="text" id="settingsMemberGasUrl" placeholder="https://script.google.com/macros/s/..." style="width:100%;margin-bottom:14px;" />
+          <label class="login-label" style="text-align:left;">管理画面パスワード（変更する場合）</label>
+          <input type="password" id="settingsNewPw" placeholder="新しいパスワードを入力" style="width:100%;margin-bottom:14px;" />
+          <button class="btn btn-primary" onclick="saveSettings()">💾 保存する</button>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="detailModal"><div class="modal"><div class="modal-header"><div class="modal-title" id="detailTitle">個票</div><button class="modal-close" onclick="closeDetail()">×</button></div><div id="detailContent"></div></div></div>
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+var CONFIG_KEY = 'kurofune_batch_cfg';
+function loadConfig(){ try{ return JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}'); }catch(e){ return {}; } }
+function saveConfig(c){ localStorage.setItem(CONFIG_KEY, JSON.stringify(c)); }
+var cfg = loadConfig();
+var GAS_URL = cfg.gasUrl || '';
+var MEMBER_GAS_URL = cfg.memberGasUrl || '';
+var PW = cfg.pw || 'kurofune2024';
+var allTests = [];
+var allStudents = [];   // 会員管理から取得した在籍生名簿（名前照合用）
+var selectedTestId = cfg.selectedTestId || '';
+var selectedTestName = '';
+var batchImages = [];
+
+function gasCall(payload){ return fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) }).then(function(r){ return r.json(); }); }
+// 会員管理GAS（別プロジェクト）を叩く。Class Boardと同方式
+function memberGasCall(payload){ return fetch(MEMBER_GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) }).then(function(r){ return r.json(); }); }
+// 在籍生名簿を取得してメモリに保持（退会・休会は会員管理GAS側で除外済み）
+function loadStudentRoster(){
+  if(!MEMBER_GAS_URL){ allStudents=[]; return Promise.resolve([]); }
+  // getStudents はフル項目（一意ID id・読み reading を含む）。在籍生だけ残す（退会・休会を除外）
+  return memberGasCall({ action:'getStudents' }).then(function(data){
+    var all = (data && data.students) ? data.students : [];
+    allStudents = all.filter(function(m){ var st=String(m.status||''); return st!=='退会' && st!=='休会'; });
+    console.log('[batch] 名簿取得:', allStudents.length, '名（在籍）/ 全', all.length, '名');
+    return allStudents;
+  }).catch(function(e){ console.warn('[batch] 名簿取得失敗:', e.message); allStudents=[]; return []; });
+}
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); },2600); }
+
+function doLogin(){ var v=document.getElementById('loginPw').value; if(v===PW){ document.getElementById('loginScreen').style.display='none'; document.getElementById('appScreen').style.display='block'; enterApp(); } else { document.getElementById('loginErr').style.display='block'; } }
+function doLogout(){ location.reload(); }
+
+function enterApp(){ document.getElementById('gasStatusLabel').textContent = GAS_URL ? 'GAS接続済み' : 'GAS未設定'; document.getElementById('settingsGasUrl').value = GAS_URL; document.getElementById('settingsMemberGasUrl').value = MEMBER_GAS_URL; loadStudentRoster(); loadTestList(); }
+
+function showPage(p){ ['select','upload','class','settings'].forEach(function(x){ document.getElementById('page-'+x).classList.toggle('hidden', x!==p); document.getElementById('nav-'+x).classList.toggle('active', x===p); }); if(p==='upload') renderUpload(); if(p==='class') renderClass(); }
+
+function saveSettings(){ var g=document.getElementById('settingsGasUrl').value.trim(); var m=document.getElementById('settingsMemberGasUrl').value.trim(); var np=document.getElementById('settingsNewPw').value; cfg.gasUrl=g; GAS_URL=g; cfg.memberGasUrl=m; MEMBER_GAS_URL=m; if(np){ cfg.pw=np; PW=np; } saveConfig(cfg); document.getElementById('settingsNewPw').value=''; document.getElementById('gasStatusLabel').textContent = GAS_URL ? 'GAS接続済み' : 'GAS未設定'; showToast('設定を保存しました'); loadStudentRoster(); loadTestList(); }
+
+function loadTestList(){
+  if(!GAS_URL){ document.getElementById('selectTestList').innerHTML='<p style="color:var(--text-muted);font-size:12px;">設定でGAS URLを入力してください。</p>'; return; }
+  document.getElementById('selectTestList').innerHTML='<p style="color:var(--text-muted);font-size:12px;">読み込み中…</p>';
+  gasCall({ action:'getTests' }).then(function(data){ allTests = data.tests || []; restoreSelectedTestName(); renderTestSelect(); if(selectedTestId){ renderUpload(); } }).catch(function(e){ document.getElementById('selectTestList').innerHTML='<p style="color:var(--danger);font-size:12px;">取得失敗: '+esc(e.message)+'</p>'; });
+}
+function renderTestSelect(){
+  var box=document.getElementById('selectTestList');
+  if(!allTests.length){ box.innerHTML='<p style="color:var(--text-muted);font-size:12px;">登録済みテストがありません。</p>'; return; }
+  box.innerHTML = allTests.map(function(t){
+    var sel=(t.testId===selectedTestId);
+    return '<button class="btn" style="justify-content:flex-start;text-align:left;'+(sel?'border-color:var(--crimson);background:var(--crimson-light);':'')+'" onclick="pickTest(\''+t.testId+'\')"><strong>'+esc(t.name||t.testName||'(無題)')+'</strong><span style="margin-left:8px;font-size:11px;color:var(--text-muted);">'+esc(t.subject||'')+' '+esc(t.targetGrade||'')+'</span>'+(sel?'<span style="margin-left:auto;color:var(--crimson);font-weight:800;">選択中</span>':'')+'</button>';
+  }).join('');
+}
+function pickTest(id){ selectedTestId=id; cfg.selectedTestId=id; saveConfig(cfg); var t=allTests.find(function(x){ return x.testId===id; }); selectedTestName = t ? (t.name||t.testName||'') : ''; renderTestSelect(); showToast('「'+selectedTestName+'」を選択しました'); showPage('upload'); }
+
+function renderUpload(){ var has=!!selectedTestId; document.getElementById('uploadNoTest').style.display = has?'none':'block'; document.getElementById('uploadMain').style.display = has?'block':'none'; if(has){ document.getElementById('uploadTestName').textContent = selectedTestName || selectedTestId; renderThumbs(); } }
+function localIdSeq(){ return 'img_'+Date.now()+'_'+Math.floor(Math.random()*100000); }
+function onFilesPicked(e){
+  var files = Array.prototype.slice.call(e.target.files||[]);
+  if(!files.length){ return; }
+  var pending = files.length;
+  files.forEach(function(file){
+    if(!/^image\//.test(file.type)){ pending--; if(pending<=0){ renderThumbs(); } return; }
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      batchImages.push({ localId: localIdSeq(), dataUrl: ev.target.result, fileName: file.name||'', status:'未送信', studentName:'' });
+      pending--; if(pending<=0){ renderThumbs(); }
+    };
+    reader.onerror = function(){ pending--; if(pending<=0){ renderThumbs(); } };
+    reader.readAsDataURL(file);
+  });
+  e.target.value='';
+}
+function badgeClassForStatus(st){
+  switch(st){ case '採点中': return 'badge-doing'; case '完了': return 'badge-done'; case '要確認': return 'badge-check'; case '失敗': return 'badge-fail'; default: return 'badge-wait'; }
+}
+function renderThumbs(){
+  var grid = document.getElementById('thumbGrid');
+  if(!grid){ return; }
+  if(!batchImages.length){ grid.innerHTML=''; document.getElementById('gradeStartBtn').style.display='none'; return; }
+  grid.innerHTML = batchImages.map(function(im, i){
+    var label = im.studentName ? esc(im.studentName) : ('答案 '+(i+1));
+    return '<div class="thumb-cell">'+
+      '<img src="'+im.dataUrl+'" alt="">'+
+      '<button class="btn" style="position:absolute;top:4px;right:4px;padding:2px 7px;font-size:11px;line-height:1.2;background:rgba(255,255,255,.92);border:1px solid var(--border);" title="削除" onclick="removeBatchImage(\''+im.localId+'\')">✕</button>'+
+      '<div class="thumb-meta"><span class="badge '+badgeClassForStatus(im.status)+'">'+esc(im.status)+'</span> <span style="color:var(--text-muted);">'+label+'</span></div>'+
+    '</div>';
+  }).join('');
+  document.getElementById('gradeStartBtn').style.display = batchImages.length ? 'inline-flex' : 'none';
+}
+function removeBatchImage(localId){
+  batchImages = batchImages.filter(function(im){ return im.localId !== localId; });
+  renderThumbs();
+}
+// 選択中テストIDから表示名を復元（起動時 selectedTestName が空のままになるのを防ぐ）
+function restoreSelectedTestName(){
+  if(!selectedTestId){ return; }
+  var t = allTests.find(function(x){ return x.testId===selectedTestId; });
+  if(t){ selectedTestName = t.name || t.testName || ''; }
+}
+
+// 分割送信の1バッチ枚数（実機で調整・要件定義 未確認No.1）
+var BATCH_SIZE = 3;
+var isGrading = false;
+var currentJobId = '';
+function makeJobId(){ var d=new Date(); function z(n){ return (n<10?'0':'')+n; } return 'job_'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'_'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds()); }
+
+// ============ 第5サイクル：名前照合（黒船LINE candidateScore_ 方式を流用）============
+function normName(x){ return String(x==null?'':x).replace(/[\s\u3000]/g,''); }
+// AI読取り名と名簿生徒の照合スコア。tgrade＝テストの対象学年（答案からは学年を読まないためテスト側の学年を使う）
+function candidateScoreBatch(readName, m, tgrade){
+  var fname=normName(readName); if(!fname){ return 0; }
+  var mname=normName(m.name); var mread=normName(m.reading);
+  var gradeMatch = (tgrade && m.grade && String(tgrade)===String(m.grade));
+  if(fname===mname || (mread && fname===mread)){ return gradeMatch?100:80; } // フルネーム一致（学年も一致=100）
+  if(mname.indexOf(fname)>=0 || fname.indexOf(mname)>=0){ return 50; }        // 名前の一部一致
+  if(mread && (mread.indexOf(fname)>=0 || fname.indexOf(mread)>=0)){ return 45; } // 読みの一部一致
+  if(fname.length>=2 && mname.indexOf(fname.slice(0,2))===0){ return 30; }    // 姓だけ一致（先頭2文字）
+  return 0;
+}
+// 読取り名から候補をスコア順で返す
+function matchStudents(readName, tgrade){
+  return allStudents.map(function(m){ return { m:m, score:candidateScoreBatch(readName,m,tgrade) }; })
+    .filter(function(x){ return x.score>0; })
+    .sort(function(a,b){ return b.score-a.score; });
+}
+// 検索窓用：名前・読みで名簿を絞る（紐づけモーダルで使用）
+function searchStudents(q){
+  q=normName(q);
+  if(!q){ return allStudents.slice(0,50); }
+  return allStudents.filter(function(m){ return normName(m.name).indexOf(q)>=0 || normName(m.reading).indexOf(q)>=0; }).slice(0,50);
+}
+// 生徒の一意キー（会員管理の id。無ければ氏名でフォールバック）
+function studentKey(m){ return m.id || m.name || ''; }
+
+// 【第5サイクル・実GAS採点】1枚を grade で採点し、名簿照合→自動確定/要確認を決める
+function gradeOne(im, jobId, testData){
+  var b64 = (im.dataUrl.indexOf(',')>=0) ? im.dataUrl.split(',')[1] : im.dataUrl;
+  var mime='image/jpeg'; var mm=/^data:(image\/[a-zA-Z0-9.+-]+);base64/.exec(im.dataUrl); if(mm){ mime=mm[1]; }
+  var tgrade = testData.targetGrade || testData.grade || '';
+  return gasCall({ action:'grade', testId:selectedTestId, testData:testData, imageBase64:b64, imageType:mime, studentName:'', grade:tgrade, jobId:jobId })
+    .then(function(res){
+      if(!res || !res.success){ im.status='失敗'; im.errorMsg=(res&&res.error)||'通信エラー'; return '失敗'; }
+      im.gradeResult = res.result || {};
+      im.logId = res.logId || '';
+      im.readName = res.studentName || '';
+      im.confidence = (res.nameConfidence==='high') ? 'high' : 'low';
+      var cands = matchStudents(im.readName, tgrade);
+      im.candidates = cands;
+      var top100 = cands.filter(function(c){ return c.score>=100; });
+      // 自動確定：nameConfidence=high かつ スコア100（フルネーム＋学年一致）が1人だけ（確定No.11）
+      if(im.confidence==='high' && top100.length===1){
+        var mm2=top100[0].m;
+        im.linkedStudentId = studentKey(mm2);
+        im.studentName = mm2.name;
+        im.status='完了';
+        gasCall({ action:'linkStudent', logId:im.logId, studentId:im.linkedStudentId, studentName:im.studentName }).catch(function(){});
+      } else {
+        im.status='要確認';
+        im.studentName = im.readName || '';
+      }
+      return im.status;
+    })
+    .catch(function(e){ im.status='失敗'; im.errorMsg=e.message; return '失敗'; });
+}
+
+function updateProgress(done, total, label){
+  var wrap=document.getElementById('progWrap');
+  var bar=document.getElementById('progBar');
+  var lbl=document.getElementById('progLabel');
+  wrap.style.display = total>0 ? 'block' : 'none';
+  bar.style.width = total>0 ? Math.round(done/total*100)+'%' : '0%';
+  lbl.textContent = label || '';
+}
+
+function startGrading(){
+  if(isGrading){ return; }
+  if(!GAS_URL){ showToast('設定で採点用GAS URLを入力してください'); return; }
+  if(!selectedTestId){ showToast('先にテストを選んでください'); return; }
+  var pending = batchImages.filter(function(im){ return im.status==='未送信' || im.status==='失敗'; });
+  if(!pending.length){ showToast('採点する答案がありません'); return; }
+  isGrading = true;
+  document.getElementById('gradeStartBtn').disabled = true;
+  var total = pending.length, done = 0;
+  updateProgress(0, total, 'テスト情報を取得中…');
+
+  // 採点に必要な testData を取得（正解・配点・対象学年）→ jobId 発行 → 分割送信
+  gasCall({ action:'getTest', testId:selectedTestId }).then(function(res){
+    var testData = res && (res.testData || res.test);
+    if(!res || !res.success || !testData){ throw new Error((res&&res.error)||'テスト情報の取得に失敗しました'); }
+    currentJobId = makeJobId();
+    updateProgress(0, total, '採点中… 0/'+total+'枚');
+    var batches = [];
+    for(var i=0;i<pending.length;i+=BATCH_SIZE){ batches.push(pending.slice(i, i+BATCH_SIZE)); }
+    function runBatch(bi){
+      if(bi>=batches.length){
+        var fail = batchImages.filter(function(im){ return im.status==='失敗'; }).length;
+        var check = batchImages.filter(function(im){ return im.status==='要確認'; }).length;
+        updateProgress(total, total, '採点完了（要確認'+check+'件・失敗'+fail+'件）');
+        isGrading = false;
+        document.getElementById('gradeStartBtn').disabled = false;
+        showToast('採点が完了しました');
+        return;
+      }
+      var batch = batches[bi];
+      batch.forEach(function(im){ im.status='採点中'; });
+      renderThumbs();
+      var jobs = batch.map(function(im){
+        return gradeOne(im, currentJobId, testData).then(function(){
+          done++;
+          updateProgress(done, total, '採点中… '+done+'/'+total+'枚');
+          renderThumbs();
+        });
+      });
+      Promise.all(jobs).then(function(){ runBatch(bi+1); });
+    }
+    runBatch(0);
+  }).catch(function(e){
+    isGrading = false;
+    document.getElementById('gradeStartBtn').disabled = false;
+    updateProgress(0, 0, '');
+    showToast('採点開始に失敗: '+e.message);
+  });
+}
+
+// ============ 第4サイクル：クラス結果＋個票（モックデータ）============
+// 【第4サイクル・モック】実GAS getLogs/getDetail の代わりにダミーを返す。第5で実GASに差し替える。
+// getLogs形：選択testIdの全採点結果（1行＝1生徒）
+function mockGetLogs(testId){
+  var subj = (selectedTestName||'').indexOf('英語')>=0 ? '英語' : '数学';
+  var names = ['田中 陽斗','佐藤 美咲','鈴木 蓮','高橋 結衣','渡辺 大翔','伊藤 凛','山本 湊','中村 葵','小林 樹','加藤 莉子'];
+  var logs = [];
+  for(var i=0;i<names.length;i++){
+    var max=100;
+    var sc = [88,72,54,95,61,43,79,58,84,67][i];
+    var acc = sc; // 満点100なので得点=正答率%
+    logs.push({
+      id:'log_'+testId+'_'+(i+1),
+      datetime:'2026-06-30',
+      studentName:names[i],
+      grade:'中1',
+      testId:testId,
+      testName:selectedTestName||testId,
+      subject:subj,
+      totalScore:sc,
+      maxScore:max,
+      accuracy:acc,
+      weakPoints:['一次方程式','文章題','約分'][i%3],
+      status: acc<60 ? '要確認' : '完了'
+    });
+  }
+  return logs;
+}
+// getDetail形：1生徒の問題ごと詳細
+function mockGetDetail(logId){
+  var logs = mockGetLogs(selectedTestId);
+  var log = logs.find(function(x){ return x.id===logId; }) || logs[0];
+  var problems = [
+    { number:1, maxScore:20, judge:'○', correct:'x=4', studentAnswer:'x=4', explanation:'' },
+    { number:2, maxScore:20, judge:'○', correct:'x=-3', studentAnswer:'x=-3', explanation:'' },
+    { number:3, maxScore:20, judge:'△', correct:'x=7', studentAnswer:'x=6', explanation:'移項のときの符号は合っていますが、最後の割り算で計算ミスがあります。両辺を2で割る前に、もう一度左辺をそろえて確認しよう。' },
+    { number:4, maxScore:20, judge:'×', correct:'x=2, y=5', studentAnswer:'x=5, y=2', explanation:'代入する文字を取り違えています。先に求めた値をどの式のどの文字に入れるか、式に印をつけてから代入すると防げます。' },
+    { number:5, maxScore:20, judge:log.totalScore>=80?'○':'×', correct:'12cm²', studentAnswer:log.totalScore>=80?'12cm²':'24cm²', explanation: log.totalScore>=80?'':'面積の公式で「÷2」を忘れています。三角形の面積は底辺×高さ÷2。図に高さの線を書き込んでから計算しよう。' }
+  ];
+  log.problems = problems;
+  log.advice = log.totalScore>=80 ? '正答率が高く、基礎がよく身についています。応用問題にも挑戦してみよう。' : '計算ミスと公式の使い忘れが目立ちます。まずは×だった問題の解き直しから始めよう。';
+  return log;
+}
+
+function renderClass(){
+  var body=document.getElementById('classBody');
+  if(!selectedTestId){ body.innerHTML='<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted);">先にテストを選んでください。</td></tr>'; return; }
+  var logs=mockGetLogs(selectedTestId);
+  if(!logs.length){ body.innerHTML='<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted);">まだ採点結果がありません。</td></tr>'; return; }
+  body.innerHTML=logs.map(function(l){
+    var warn = (l.accuracy<60);
+    var stBadge = l.status==='要確認' ? '<span class="badge badge-check">要確認</span>' : '<span class="badge badge-done">完了</span>';
+    return '<tr class="'+(warn?'row-warn':'')+'" style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail(\''+l.id+'\')">'+
+      '<td style="padding:8px;font-weight:700;">'+esc(l.studentName)+'</td>'+
+      '<td>'+l.totalScore+' / '+l.maxScore+'</td>'+
+      '<td style="'+(warn?'color:var(--danger);font-weight:800;':'')+'">'+l.accuracy+'%</td>'+
+      '<td style="color:var(--text-muted);">'+esc(l.weakPoints||'')+'</td>'+
+      '<td>'+stBadge+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function judgeColor(j){ return j==='○'?'var(--success)':(j==='×'?'var(--danger)':'#b45309'); }
+
+function buildDetailHtml(log, forPrint){
+  var probRows = (log.problems||[]).map(function(p){
+    var ex = p.explanation ? '<div style="margin-top:4px;color:#1d4ed8;font-size:12px;line-height:1.6;">'+esc(p.explanation)+'</div>' : '';
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">'+
+      '<span style="font-weight:800;color:'+judgeColor(p.judge)+';font-size:15px;">'+esc(p.judge)+'</span> '+
+      '<span style="font-weight:700;">問'+p.number+'</span> '+
+      '<span style="color:var(--text-muted);font-size:11px;">（'+p.maxScore+'点）</span> '+
+      '<span style="color:var(--text-muted);font-size:11px;">正解: '+esc(p.correct)+' / 解答: '+esc(p.studentAnswer)+'</span>'+
+      ex+
+    '</div>';
+  }).join('');
+  return ''+
+    '<div style="'+(forPrint?'':'padding:4px 2px;')+'">'+
+      '<div style="text-align:center;border-bottom:2px solid var(--crimson);padding-bottom:8px;margin-bottom:10px;">'+
+        '<div style="font-size:12px;color:var(--text-muted);">進学塾クロフネ</div>'+
+        '<div style="font-size:16px;font-weight:800;">'+esc(log.testName)+'　個人成績票</div>'+
+        '<div style="font-size:12px;color:var(--text-muted);">'+esc(log.subject)+'　/　'+esc(log.studentName)+'　/　'+esc(log.datetime)+'</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:14px;margin-bottom:10px;font-size:13px;">'+
+        '<div><span style="color:var(--text-muted);">得点</span> <strong style="font-size:18px;">'+log.totalScore+'</strong> / '+log.maxScore+'</div>'+
+        '<div><span style="color:var(--text-muted);">正答率</span> <strong style="font-size:18px;'+(log.accuracy<60?'color:var(--danger);':'')+'">'+log.accuracy+'%</strong></div>'+
+        '<div><span style="color:var(--text-muted);">苦手分野</span> <strong>'+esc(log.weakPoints||'—')+'</strong></div>'+
+      '</div>'+
+      '<div style="font-weight:800;font-size:13px;margin:8px 0 2px;">問題ごとの判定</div>'+
+      probRows+
+      '<div style="font-weight:800;font-size:13px;margin:12px 0 4px;">次への一言アドバイス</div>'+
+      '<div style="font-size:12.5px;line-height:1.7;background:var(--surface);border-radius:8px;padding:10px;">'+esc(log.advice||'')+'</div>'+
+    '</div>';
+}
+
+var currentDetailLog=null;
+function openDetail(logId){
+  var log=mockGetDetail(logId);
+  currentDetailLog=log;
+  document.getElementById('detailTitle').textContent=log.studentName+' の個票';
+  document.getElementById('detailContent').innerHTML=
+    buildDetailHtml(log,false)+
+    '<div style="text-align:right;margin-top:12px;"><button class="btn btn-primary" onclick="printDetail()">🖨 個票を印刷</button></div>';
+  document.getElementById('detailModal').classList.add('show');
+}
+function printDetail(){
+  if(!currentDetailLog){ return; }
+  document.getElementById('printArea').innerHTML=buildDetailHtml(currentDetailLog,true);
+  window.print();
+}
+
+function closeDetail(){ document.getElementById('detailModal').classList.remove('show'); }
+</script>
+</body>
+</html>
