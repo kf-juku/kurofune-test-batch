@@ -198,9 +198,9 @@ function badgeFor(st){ return st==='完了'?'b-done':(st==='失敗'?'b-fail':(st
 function renderGrid(){
   var g=document.getElementById('grid');
   g.innerHTML=images.map(function(im){
-    var right = im.status==='完了' ? (im.readName?esc(im.readName):'完了') : (im.status==='失敗'?'失敗':'');
+    var right = im.status==='完了' ? (im.readName?esc(im.readName):'完了') : (im.status==='失敗'?(im.errorMsg?esc(String(im.errorMsg).slice(0,16)):'失敗'):'');
     var score = (im.status==='完了' && im.score!=null) ? (im.score+'/'+im.maxScore) : '';
-    return '<div class="cell"><img src="'+im.dataUrl+'">'+
+    return '<div class="cell"'+(im.errorMsg?(' title="'+esc(im.errorMsg)+'"'):'')+'><img src="'+im.dataUrl+'">'+
       (isSending?'':'<button class="rm" onclick="removeImg(\''+im.localId+'\')">✕</button>')+
       '<div class="st"><span class="badge '+badgeFor(im.status)+'">'+esc(im.status)+'</span><span>'+esc(score||right)+'</span></div></div>';
   }).join('');
@@ -237,19 +237,19 @@ function sendAll(){
   if(!pending.length){ showToast('送信する答案がありません'); return; }
   isSending=true; renderGrid();
   var total=pending.length, done=0, jobId=makeJobId();
-  setProg(0,total,'採点中… 0/'+total+'枚');
+  setProg(0,total,'採点中… 0/'+total+'枚（終わるまで閉じないでください）');
   var batches=[]; for(var i=0;i<pending.length;i+=BATCH_SIZE){ batches.push(pending.slice(i,i+BATCH_SIZE)); }
   function run(bi){
     if(bi>=batches.length){
       var fail=images.filter(function(im){ return im.status==='失敗'; }).length;
-      setProg(total,total,'採点完了（失敗'+fail+'件）'+(fail?'　失敗分はもう一度送信できます':''));
+      setProg(total,total,'✅ 採点完了。このまま閉じてOKです'+(fail?'（失敗'+fail+'件は「送信して採点」で再送できます）':''));
       isSending=false; renderGrid();
       showToast(fail?('採点完了。失敗'+fail+'件'):'採点が完了しました');
       return;
     }
     var batch=batches[bi];
     batch.forEach(function(im){ im.status='採点中'; }); renderGrid();
-    Promise.all(batch.map(function(im){ return gradeOne(im,jobId).then(function(){ done++; setProg(done,total,'採点中… '+done+'/'+total+'枚'); renderGrid(); }); }))
+    Promise.all(batch.map(function(im){ return gradeOne(im,jobId).then(function(){ done++; setProg(done,total,'採点中… '+done+'/'+total+'枚（終わるまで閉じないでください）'); renderGrid(); }); }))
       .then(function(){ run(bi+1); });
   }
   run(0);

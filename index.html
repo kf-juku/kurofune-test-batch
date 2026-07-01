@@ -776,6 +776,7 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <div class="modal-overlay" id="detailModal"><div class="modal"><div class="modal-header"><div class="modal-title" id="detailTitle">個票</div><button class="modal-close" onclick="closeDetail()">×</button></div><div id="detailContent"></div></div></div>
+<div class="modal-overlay" id="linkModal"><div class="modal"><div class="modal-header"><div class="modal-title" id="linkTitle">生徒に紐づける</div><button class="modal-close" onclick="closeLinkModal()">×</button></div><div id="linkReadName" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div><input type="text" id="linkSearch" placeholder="生徒名・よみで検索" style="width:100%;margin-bottom:10px;" oninput="renderLinkCandidates()" /><div id="linkCandidates" style="max-height:50vh;overflow-y:auto;"></div></div></div>
 <div id="printArea"></div>
 <div class="toast" id="toast"></div>
 
@@ -1008,6 +1009,8 @@ function startGrading(){
 
 // ============ 結果・再印刷（実GAS getLogs / getDetail）2026-07-01 実データ化 ============
 var _resultLogs = [];   // getLogs の生ログ（全件）
+var currentOpenJobId='';
+function fmtDT(v){ if(!v){ return ''; } var d=new Date(v); if(isNaN(d.getTime())){ return String(v); } try{ return d.toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return String(v); } }
 function switchResultTab(which){
   document.getElementById('rtab-jobs').classList.toggle('hidden', which!=='jobs');
   document.getElementById('rtab-student').classList.toggle('hidden', which!=='student');
@@ -1038,10 +1041,11 @@ function renderJobs(){
     var unlinked=arr.filter(function(l){ return !l.studentId; }).length;
     return '<button style="width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;" onclick="openJob(\''+esc(k)+'\')">'+
       '<div style="font-weight:800;">'+esc(testName)+'</div>'+
-      '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">'+esc(String(dt))+'　/　'+arr.length+'名'+(unlinked?('　/　未紐づけ'+unlinked+'名'):'')+'</div></button>';
+      '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">'+esc(fmtDT(dt))+'　/　'+arr.length+'名'+(unlinked?('　/　未紐づけ'+unlinked+'名'):'')+'</div></button>';
   }).join('');
 }
 function openJob(jobId){
+  currentOpenJobId=jobId;
   var arr=_resultLogs.filter(function(l){ return (l.jobId||'(未グループ)')===jobId; });
   var rows=arr.map(function(l){ return logRowHtml(l); }).join('');
   var title=(arr[0]?(arr[0].testName||''):'');
@@ -1053,7 +1057,7 @@ function openJob(jobId){
 function logRowHtml(l){
   var warn=(Number(l.accuracy)<60);
   var name=l.studentName||'(未読取)';
-  var linked = l.studentId ? '<span class="badge badge-done">紐づけ済</span>' : '<span class="badge badge-check">未紐づけ</span>';
+  var linked = l.studentId ? '<span class="badge badge-done">紐づけ済</span>' : '<span class="badge badge-check">未紐づけ</span> <button class="btn" style="padding:3px 8px;font-size:11px;" onclick="event.stopPropagation();openLinkModal(\''+esc(l.id)+'\')">紐づけ</button>';
   return '<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail(\''+esc(l.id)+'\')">'+
     '<td style="padding:8px;font-weight:700;">'+esc(name)+'</td>'+
     '<td>'+esc(String(l.totalScore))+' / '+esc(String(l.maxScore))+'</td>'+
@@ -1079,7 +1083,7 @@ function openStudentHistory(sid, name){
     if(!logs.length){ box.innerHTML='<p style="font-size:12px;color:var(--text-muted);">'+esc(name)+' さんの採点履歴はまだありません。</p>'; return; }
     var rows=logs.map(function(l){
       return '<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail(\''+esc(l.id)+'\')">'+
-        '<td style="padding:8px;">'+esc(String(l.datetime))+'</td>'+
+        '<td style="padding:8px;">'+esc(fmtDT(l.datetime))+'</td>'+
         '<td style="font-weight:700;">'+esc(l.testName||'')+'</td>'+
         '<td>'+esc(String(l.totalScore))+'/'+esc(String(l.maxScore))+'</td>'+
         '<td>'+esc(String(l.accuracy))+'%</td></tr>';
@@ -1112,7 +1116,7 @@ function buildDetailHtml(log, forPrint){
       '<div style="text-align:center;border-bottom:2px solid var(--crimson);padding-bottom:8px;margin-bottom:10px;">'+
         '<div style="font-size:12px;color:var(--text-muted);">進学塾クロフネ</div>'+
         '<div style="font-size:16px;font-weight:800;">'+esc(log.testName)+'　個人成績票</div>'+
-        '<div style="font-size:12px;color:var(--text-muted);">'+esc(log.subject)+'　/　'+esc(log.studentName)+'　/　'+esc(String(log.datetime))+'</div>'+
+        '<div style="font-size:12px;color:var(--text-muted);">'+esc(log.subject)+'　/　'+esc(log.studentName)+'　/　'+esc(fmtDT(log.datetime))+'</div>'+
       '</div>'+
       '<div style="display:flex;gap:14px;margin-bottom:10px;font-size:13px;flex-wrap:wrap;">'+
         '<div><span style="color:var(--text-muted);">得点</span> <strong style="font-size:18px;">'+esc(String(log.totalScore))+'</strong> / '+esc(String(log.maxScore))+'</div>'+
@@ -1146,6 +1150,49 @@ function printDetail(){
   if(window.MathJax&&MathJax.typesetPromise){ MathJax.typesetPromise([pa]).then(function(){ window.print(); }).catch(function(){ window.print(); }); }
   else { window.print(); }
 }
+var _linkLogId='';
+function openLinkModal(logId){
+  if(!allStudents.length){ showToast('名簿が未取得です。設定で会員管理GAS URLを確認してください'); return; }
+  _linkLogId=logId;
+  var l=_resultLogs.find(function(x){ return x.id===logId; });
+  var read=l?(l.studentName||''):'';
+  document.getElementById('linkTitle').textContent='生徒に紐づける';
+  document.getElementById('linkReadName').textContent = read ? ('AI読み取り名：「'+read+'」　候補を選ぶか、名前で検索してください') : '名前で検索して生徒を選んでください';
+  document.getElementById('linkSearch').value='';
+  renderLinkCandidates();
+  document.getElementById('linkModal').classList.add('show');
+}
+function renderLinkCandidates(){
+  var box=document.getElementById('linkCandidates');
+  var l=_resultLogs.find(function(x){ return x.id===_linkLogId; });
+  var q=document.getElementById('linkSearch').value;
+  var list;
+  if(q.trim()){
+    list=searchStudents(q).map(function(m){ return {m:m, score:null}; });
+  } else {
+    var read=l?(l.studentName||''):'';
+    var tgrade=l?(l.grade||''):'';
+    var cands=read?matchStudents(read,tgrade):[];
+    list = cands.length ? cands : allStudents.slice(0,30).map(function(m){ return {m:m, score:null}; });
+  }
+  if(!list.length){ box.innerHTML='<p style="font-size:12px;color:var(--text-muted);">候補がいません。名前で検索してください。</p>'; return; }
+  box.innerHTML=list.slice(0,30).map(function(x){
+    var m=x.m;
+    var sc=(x.score!=null)?('<span class="badge badge-check" style="margin-left:6px;">一致度'+x.score+'</span>'):'';
+    return '<button class="btn" style="display:block;width:100%;text-align:left;margin-bottom:6px;" onclick="doLink(\''+esc(studentKey(m))+'\',\''+esc(m.name)+'\')">'+esc(m.name)+'<span style="color:var(--text-muted);font-weight:400;font-size:11px;margin-left:6px;">'+esc(m.grade||'')+' '+esc(m.classroom||'')+'</span>'+sc+'</button>';
+  }).join('');
+}
+function doLink(sid, name){
+  gasCall({ action:'linkStudent', logId:_linkLogId, studentId:sid, studentName:name }).then(function(res){
+    if(!res||!res.success){ showToast('紐づけ失敗: '+((res&&res.error)||'')); return; }
+    var l=_resultLogs.find(function(x){ return x.id===_linkLogId; });
+    if(l){ l.studentId=sid; l.studentName=name; }
+    closeLinkModal();
+    showToast(name+' に紐づけました');
+    if(currentOpenJobId){ openJob(currentOpenJobId); } else { renderJobs(); }
+  }).catch(function(e){ showToast('紐づけ失敗: '+e.message); });
+}
+function closeLinkModal(){ document.getElementById('linkModal').classList.remove('show'); }
 function closeDetail(){ document.getElementById('detailModal').classList.remove('show'); }
 </script>
 </body>
